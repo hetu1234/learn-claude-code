@@ -48,6 +48,7 @@ if os.getenv("ANTHROPIC_BASE_URL"):
 
 client = Anthropic(base_url=os.getenv("ANTHROPIC_BASE_URL"))
 MODEL = os.environ["MODEL_ID"]
+RESPONSE_DEBUG_PRINTED = False
 
 SYSTEM = f"You are a coding agent at {os.getcwd()}. Use bash to solve tasks. Act, don't explain."
 
@@ -79,13 +80,18 @@ def run_bash(command: str) -> str:
 
 # -- The core pattern: a while loop that calls tools until the model stops --
 def agent_loop(messages: list):
+    global RESPONSE_DEBUG_PRINTED
     while True:
         response = client.messages.create(
             model=MODEL, system=SYSTEM, messages=messages,
             tools=TOOLS, max_tokens=8000,
         )
+        if not RESPONSE_DEBUG_PRINTED:
+            print(response)
+            RESPONSE_DEBUG_PRINTED = True
         # Append assistant turn
         messages.append({"role": "assistant", "content": response.content})
+        print(f"\033[32m{response.stop_reason}\033[0m")
         # If the model didn't call a tool, we're done
         if response.stop_reason != "tool_use":
             return
@@ -99,6 +105,7 @@ def agent_loop(messages: list):
                 results.append({"type": "tool_result", "tool_use_id": block.id,
                                 "content": output})
         messages.append({"role": "user", "content": results})
+        print("-----------------\n")
 
 
 if __name__ == "__main__":
