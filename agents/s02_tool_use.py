@@ -121,6 +121,7 @@ def agent_loop(messages: list):
         if response.stop_reason != "tool_use":
             return
         results = []
+        print(f"=={response.content}")
         for block in response.content:
             if block.type == "tool_use":
                 handler = TOOL_HANDLERS.get(block.name)

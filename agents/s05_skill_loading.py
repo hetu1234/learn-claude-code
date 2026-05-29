@@ -38,6 +38,7 @@ Key insight: "Don't put everything in the system prompt. Load on demand."
 import os
 import re
 import subprocess
+import builtins
 import yaml
 from pathlib import Path
 
@@ -53,6 +54,14 @@ WORKDIR = Path.cwd()
 client = Anthropic(base_url=os.getenv("ANTHROPIC_BASE_URL"))
 MODEL = os.environ["MODEL_ID"]
 SKILLS_DIR = WORKDIR / "skills"
+LOG_FILE = WORKDIR / "print05.log"
+
+
+def print(*args, **kwargs):
+    """Write all print output to print05.log in append mode."""
+    kwargs.pop("file", None)
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        builtins.print(*args, file=f, **kwargs)
 
 
 # -- SkillLoader: scan skills/<name>/SKILL.md with YAML frontmatter --
@@ -195,6 +204,7 @@ def agent_loop(messages: list):
         if response.stop_reason != "tool_use":
             return
         results = []
+        print(f"=={response.content}")
         for block in response.content:
             if block.type == "tool_use":
                 handler = TOOL_HANDLERS.get(block.name)

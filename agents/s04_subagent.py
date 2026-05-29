@@ -25,6 +25,7 @@ Key insight: "Process isolation gives context isolation for free."
 
 import os
 import subprocess
+import builtins
 from pathlib import Path
 
 from anthropic import Anthropic
@@ -38,6 +39,14 @@ if os.getenv("ANTHROPIC_BASE_URL"):
 WORKDIR = Path.cwd()
 client = Anthropic(base_url=os.getenv("ANTHROPIC_BASE_URL"))
 MODEL = os.environ["MODEL_ID"]
+LOG_FILE = WORKDIR / "print04.log"
+
+
+def print(*args, **kwargs):
+    """Write all print output to print04.log in append mode."""
+    kwargs.pop("file", None)
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        builtins.print(*args, file=f, **kwargs)
 
 SYSTEM = f"You are a coding agent at {WORKDIR}. Use the task tool to delegate exploration or subtasks."
 SUBAGENT_SYSTEM = f"You are a coding subagent at {WORKDIR}. Complete the given task, then summarize your findings."
@@ -153,8 +162,10 @@ def agent_loop(messages: list):
         if response.stop_reason != "tool_use":
             return
         results = []
+        print(f"=={response.content}")
         for block in response.content:
             if block.type == "tool_use":
+                print(f"+++ {block.name}:")
                 if block.name == "task":
                     desc = block.input.get("description", "subtask")
                     prompt = block.input.get("prompt", "")

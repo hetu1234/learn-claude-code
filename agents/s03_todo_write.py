@@ -29,6 +29,7 @@ Key insight: "The agent can track its own progress -- and I can see it."
 
 import os
 import subprocess
+import builtins
 from pathlib import Path
 
 from anthropic import Anthropic
@@ -42,6 +43,14 @@ if os.getenv("ANTHROPIC_BASE_URL"):
 WORKDIR = Path.cwd()
 client = Anthropic(base_url=os.getenv("ANTHROPIC_BASE_URL"))
 MODEL = os.environ["MODEL_ID"]
+LOG_FILE = WORKDIR / "print03.log"
+
+
+def print(*args, **kwargs):
+    """Write all print output to print03.log in append mode."""
+    kwargs.pop("file", None)
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        builtins.print(*args, file=f, **kwargs)
 
 SYSTEM = f"""You are a coding agent at {WORKDIR}.
 Use the todo tool to plan multi-step tasks. Mark in_progress before starting, completed when done.
@@ -54,6 +63,7 @@ class TodoManager:
         self.items = []
 
     def update(self, items: list) -> str:
+        print(f"000 Updating todos: {items}")
         if len(items) > 20:
             raise ValueError("Max 20 todos allowed")
         validated = []
@@ -174,7 +184,9 @@ def agent_loop(messages: list):
             return
         results = []
         used_todo = False
+        print(f"=={response.content}")
         for block in response.content:
+            # print(f"111 {block}:")
             if block.type == "tool_use":
                 handler = TOOL_HANDLERS.get(block.name)
                 try:
