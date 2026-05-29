@@ -210,11 +210,14 @@ TOOLS = [
 def agent_loop(messages: list):
     while True:
         # Layer 1: micro_compact before each LLM call
+        print(f"000 {messages}")
         micro_compact(messages)
+        print(f"111 {messages}")
         # Layer 2: auto_compact if token estimate exceeds threshold
         if estimate_tokens(messages) > THRESHOLD:
             print("[auto_compact triggered]")
             messages[:] = auto_compact(messages)
+            print(f"222 {messages}")
         response = client.messages.create(
             model=MODEL, system=SYSTEM, messages=messages,
             tools=TOOLS, max_tokens=8000,
