@@ -48,6 +48,7 @@ import os
 import subprocess
 import threading
 import time
+import builtins
 from pathlib import Path
 
 from anthropic import Anthropic
@@ -62,6 +63,14 @@ client = Anthropic(base_url=os.getenv("ANTHROPIC_BASE_URL"))
 MODEL = os.environ["MODEL_ID"]
 TEAM_DIR = WORKDIR / ".team"
 INBOX_DIR = TEAM_DIR / "inbox"
+LOG_FILE = WORKDIR / "print09.log"
+
+
+def print(*args, **kwargs):
+    """Write all print output to print09.log in append mode."""
+    kwargs.pop("file", None)
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        builtins.print(*args, file=f, **kwargs)
 
 SYSTEM = f"You are a team lead at {WORKDIR}. Spawn teammates and communicate via inboxes."
 
@@ -361,6 +370,7 @@ def agent_loop(messages: list):
         if response.stop_reason != "tool_use":
             return
         results = []
+        print(f"--{response.content}")
         for block in response.content:
             if block.type == "tool_use":
                 handler = TOOL_HANDLERS.get(block.name)

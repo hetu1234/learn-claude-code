@@ -25,6 +25,7 @@ Key insight: "State that survives compression -- because it's outside the conver
 import json
 import os
 import subprocess
+import builtins
 from pathlib import Path
 
 from anthropic import Anthropic
@@ -39,6 +40,14 @@ WORKDIR = Path.cwd()
 client = Anthropic(base_url=os.getenv("ANTHROPIC_BASE_URL"))
 MODEL = os.environ["MODEL_ID"]
 TASKS_DIR = WORKDIR / ".tasks"
+LOG_FILE = WORKDIR / "print07.log"
+
+
+def print(*args, **kwargs):
+    """Write all print output to print06.log in append mode."""
+    kwargs.pop("file", None)
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        builtins.print(*args, file=f, **kwargs)
 
 SYSTEM = f"You are a coding agent at {WORKDIR}. Use task tools to plan and track work."
 
@@ -207,6 +216,7 @@ def agent_loop(messages: list):
             model=MODEL, system=SYSTEM, messages=messages,
             tools=TOOLS, max_tokens=8000,
         )
+        print(f"--{response.content}")
         messages.append({"role": "assistant", "content": response.content})
         if response.stop_reason != "tool_use":
             return

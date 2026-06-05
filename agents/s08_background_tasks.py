@@ -29,6 +29,7 @@ import os
 import subprocess
 import threading
 import uuid
+import builtins
 from pathlib import Path
 
 from anthropic import Anthropic
@@ -42,6 +43,14 @@ if os.getenv("ANTHROPIC_BASE_URL"):
 WORKDIR = Path.cwd()
 client = Anthropic(base_url=os.getenv("ANTHROPIC_BASE_URL"))
 MODEL = os.environ["MODEL_ID"]
+LOG_FILE = WORKDIR / "print08.log"
+
+
+def print(*args, **kwargs):
+    """Write all print output to print08.log in append mode."""
+    kwargs.pop("file", None)
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        builtins.print(*args, file=f, **kwargs)
 
 SYSTEM = f"You are a coding agent at {WORKDIR}. Use background_run for long-running commands."
 
@@ -189,6 +198,7 @@ def agent_loop(messages: list):
     while True:
         # Drain background notifications and inject as system message before LLM call
         notifs = BG.drain_notifications()
+        print(f"Drained {len(notifs)} background notifications")
         if notifs and messages:
             notif_text = "\n".join(
                 f"[bg:{n['task_id']}] {n['status']}: {n['result']}" for n in notifs
