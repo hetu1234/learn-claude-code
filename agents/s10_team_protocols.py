@@ -53,6 +53,7 @@ import subprocess
 import threading
 import time
 import uuid
+import builtins
 from pathlib import Path
 
 from anthropic import Anthropic
@@ -67,6 +68,14 @@ client = Anthropic(base_url=os.getenv("ANTHROPIC_BASE_URL"))
 MODEL = os.environ["MODEL_ID"]
 TEAM_DIR = WORKDIR / ".team"
 INBOX_DIR = TEAM_DIR / "inbox"
+LOG_FILE = WORKDIR / "print10.log"
+
+def print(*args, **kwargs):
+    """Write all print output to print10.log in append mode."""
+    kwargs.pop("file", None)
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        builtins.print(*args, file=f, **kwargs)
+
 
 SYSTEM = f"You are a team lead at {WORKDIR}. Manage teammates with shutdown and plan approval protocols."
 
@@ -307,7 +316,11 @@ def _run_bash(command: str) -> str:
     try:
         r = subprocess.run(
             command, shell=True, cwd=WORKDIR,
-            capture_output=True, text=True, timeout=120,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=120,
         )
         out = (r.stdout + r.stderr).strip()
         return out[:50000] if out else "(no output)"

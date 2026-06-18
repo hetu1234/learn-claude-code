@@ -35,6 +35,7 @@ import os
 import re
 import subprocess
 import time
+import builtins
 from pathlib import Path
 
 from anthropic import Anthropic
@@ -48,6 +49,14 @@ if os.getenv("ANTHROPIC_BASE_URL"):
 WORKDIR = Path.cwd()
 client = Anthropic(base_url=os.getenv("ANTHROPIC_BASE_URL"))
 MODEL = os.environ["MODEL_ID"]
+LOG_FILE = WORKDIR / "print12.log"
+
+
+def print(*args, **kwargs):
+    """Write all print output to print12.log in append mode."""
+    kwargs.pop("file", None)
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        builtins.print(*args, file=f, **kwargs)
 
 
 def detect_repo_root(cwd: Path) -> Path | None:
@@ -58,6 +67,8 @@ def detect_repo_root(cwd: Path) -> Path | None:
             cwd=cwd,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=10,
         )
         if r.returncode != 0:
@@ -241,6 +252,8 @@ class WorktreeManager:
                 cwd=self.repo_root,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=10,
             )
             return r.returncode == 0
@@ -255,6 +268,8 @@ class WorktreeManager:
             cwd=self.repo_root,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=120,
         )
         if r.returncode != 0:
@@ -360,6 +375,8 @@ class WorktreeManager:
             cwd=path,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=60,
         )
         text = (r.stdout + r.stderr).strip()
@@ -384,6 +401,8 @@ class WorktreeManager:
                 cwd=path,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=300,
             )
             out = (r.stdout + r.stderr).strip()
@@ -493,6 +512,8 @@ def run_bash(command: str) -> str:
             cwd=WORKDIR,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=120,
         )
         out = (r.stdout + r.stderr).strip()
